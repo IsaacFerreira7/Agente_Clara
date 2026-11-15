@@ -1,0 +1,13 @@
+spec_version: v1
+kind: knowledge_base
+name: clara_knowledge_base
+description: >
+  Base de conhecimento vetorial do agente Clara, contendo informações sobre
+  golpes digitais (phishing, smishing, vishing, PIX fraudulento, WhatsApp
+  clonado, entre outros) e educação financeira (juros, crédito, dívidas,
+  investimentos, orçamento). Fontes: Banco Central, Febraban, Safernet, CERT.br,
+  CVM, ENEF, Serasa, Tesouro Nacional. Idioma principal: pt-BR.
+embedding_model: intfloat/multilingual-e5-large
+documents:
+  - docs/golpes-digitais-guia.txt
+  - docs/educacao-financeira-guia.txt
