@@ -149,24 +149,62 @@
     </div>
   </footer>
 
-  <!-- WEBCHAT EMBED — IBM watsonx Orchestrate -->
+  <!-- WEBCHAT EMBED — IBM watsonx Orchestrate (new API) -->
   <script>
-    window.wxOConfiguration = {
-      orchestrationID: "37732a346f0a44509ec2d2bc4eb89625_224ae8b9-2618-44b2-8b87-58871f65a40a",
-      hostURL: "https://eu-gb.watson-orchestrate.cloud.ibm.com",
-      rootElementID: "root",
-      showLauncher: true,
-      crn: "crn:v1:bluemix:public:watsonx-orchestrate:eu-gb:a/37732a346f0a44509ec2d2bc4eb89625:224ae8b9-2618-44b2-8b87-58871f65a40a::",
-      deploymentPlatform: "ibmcloud",
-      chatOptions: {
-        agentId: "3d2d9a28-52b1-4c27-997d-c10d007bae57",
-        agentEnvironmentId: "6879aa41-a99e-4914-b59b-0f53872fd99d"
-      }
-    };
+    var WXO_HOST        = "https://eu-gb.watson-orchestrate.cloud.ibm.com";
+    var WXO_INSTANCE    = "https://api.eu-gb.watson-orchestrate.cloud.ibm.com/instances/224ae8b9-2618-44b2-8b87-58871f65a40a";
+    var WXO_AGENT_ID    = "3d2d9a28-52b1-4c27-997d-c10d007bae57";
+    var WXO_ENV_ID      = "6879aa41-a99e-4914-b59b-0f53872fd99d";
+    var WXO_ORCH_ID     = "37732a346f0a44509ec2d2bc4eb89625_224ae8b9-2618-44b2-8b87-58871f65a40a";
+
+    function fetchIBMToken(callback) {
+      // Exchange IBM Cloud API key for IAM Bearer token
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "https://iam.cloud.ibm.com/identity/token", true);
+      xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          var data = JSON.parse(xhr.responseText);
+          callback(null, data.access_token);
+        } else {
+          callback("Token request failed: " + xhr.status, null);
+        }
+      };
+      xhr.onerror = function () { callback("Network error", null); };
+      // NOTE: Replace with your IBM Cloud API key
+      xhr.send("grant_type=urn%3Aibm%3Aparams%3Aoauth%3Agrant-type%3Aapikey&apikey=REVOKED_API_KEY");
+    }
+
     setTimeout(function () {
-      const script = document.createElement('script');
-      script.src = `${window.wxOConfiguration.hostURL}/wxochat/wxoLoader.js?embed=true`;
-      script.addEventListener('load', function () { wxoLoader.init(); });
+      var script = document.createElement("script");
+      script.src = WXO_HOST + "/wxochat/wxoLoader.js?embed=true";
+      script.addEventListener("load", function () {
+        fetchIBMToken(function (err, token) {
+          if (err) { console.error("[Clara] Token error:", err); return; }
+
+          wxoLoader.init({
+            orchestrationID: WXO_ORCH_ID,
+            hostURL: WXO_HOST,
+            instanceUrl: WXO_INSTANCE,
+            deploymentPlatform: "ibmcloud",
+            showLauncher: true,
+            chatOptions: {
+              agentId: WXO_AGENT_ID,
+              agentEnvironmentId: WXO_ENV_ID
+            },
+            onLoad: function (instance) {
+              // Provide the token when the widget requests authentication
+              instance.on({ type: "authTokenNeeded", handler: function (event) {
+                fetchIBMToken(function (err, newToken) {
+                  if (!err) { event.authToken = newToken; }
+                });
+              }});
+              instance.updateUserToken(token);
+              instance.render();
+            }
+          });
+        });
+      });
       document.head.appendChild(script);
     }, 0);
   </script>
